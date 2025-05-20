@@ -169,6 +169,7 @@ CMakeFiles/sfml-chess.dir/main.cpp.o: /home/henrywoodrow/repos/chess/main.cpp \
   /usr/include/c++/14/bits/hash_bytes.h \
   /usr/include/c++/14/bits/invoke.h \
   /usr/include/c++/14/bits/ios_base.h \
+  /usr/include/c++/14/bits/istream.tcc \
   /usr/include/c++/14/bits/locale_classes.h \
   /usr/include/c++/14/bits/locale_classes.tcc \
   /usr/include/c++/14/bits/locale_conv.h \
@@ -241,6 +242,8 @@ CMakeFiles/sfml-chess.dir/main.cpp.o: /home/henrywoodrow/repos/chess/main.cpp \
   /usr/include/c++/14/initializer_list \
   /usr/include/c++/14/ios \
   /usr/include/c++/14/iosfwd \
+  /usr/include/c++/14/iostream \
+  /usr/include/c++/14/istream \
   /usr/include/c++/14/iterator \
   /usr/include/c++/14/locale \
   /usr/include/c++/14/map \
@@ -352,6 +355,12 @@ CMakeFiles/sfml-chess.dir/main.cpp.o: /home/henrywoodrow/repos/chess/main.cpp \
 /usr/include/c++/14/x86_64-redhat-linux/bits/c++allocator.h:
 
 /usr/include/c++/14/x86_64-redhat-linux/bits/atomic_word.h:
+
+/usr/include/c++/14/vector:
+
+/usr/include/c++/14/typeinfo:
+
+/usr/include/c++/14/type_traits:
 
 /usr/include/bits/types/struct_FILE.h:
 
@@ -527,8 +536,6 @@ CMakeFiles/sfml-chess.dir/main.cpp.o: /home/henrywoodrow/repos/chess/main.cpp \
 
 /usr/include/c++/14/streambuf:
 
-/usr/include/c++/14/vector:
-
 /usr/include/bits/floatn-common.h:
 
 /usr/include/SFML/System/Export.hpp:
@@ -593,13 +600,9 @@ CMakeFiles/sfml-chess.dir/main.cpp.o: /home/henrywoodrow/repos/chess/main.cpp \
 
 /usr/include/c++/14/bits/requires_hosted.h:
 
+/usr/include/c++/14/iostream:
+
 /usr/include/asm-generic/errno.h:
-
-/usr/include/SFML/Graphics/Color.hpp:
-
-/usr/include/c++/14/bits/algorithmfwd.h:
-
-/usr/include/SFML/System.hpp:
 
 /usr/include/stdio.h:
 
@@ -695,6 +698,8 @@ CMakeFiles/sfml-chess.dir/main.cpp.o: /home/henrywoodrow/repos/chess/main.cpp \
 
 /usr/include/c++/14/algorithm:
 
+/usr/include/c++/14/istream:
+
 /usr/include/c++/14/bit:
 
 /usr/include/c++/14/bits/alloc_traits.h:
@@ -742,6 +747,14 @@ CMakeFiles/sfml-chess.dir/main.cpp.o: /home/henrywoodrow/repos/chess/main.cpp \
 /usr/include/c++/14/bits/functexcept.h:
 
 /usr/include/c++/14/bits/invoke.h:
+
+/usr/include/SFML/Graphics/Color.hpp:
+
+/usr/include/c++/14/bits/algorithmfwd.h:
+
+/usr/include/SFML/System.hpp:
+
+/usr/include/c++/14/bits/istream.tcc:
 
 /usr/include/c++/14/bits/locale_classes.h:
 
@@ -886,7 +899,3 @@ CMakeFiles/sfml-chess.dir/main.cpp.o: /home/henrywoodrow/repos/chess/main.cpp \
 /usr/include/c++/14/pstl/glue_algorithm_defs.h:
 
 /usr/include/c++/14/string:
-
-/usr/include/c++/14/type_traits:
-
-/usr/include/c++/14/typeinfo:
