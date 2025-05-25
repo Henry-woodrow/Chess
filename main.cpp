@@ -1,27 +1,28 @@
 #include <SFML/Graphics.hpp>
 #include <map>
+#include <string>
 #include <iostream>
 const int TILE_SIZE = 100;
 const int BOARD_SIZE = 8;
 
+struct Piece {
+    sf::Sprite sprite;
+    std::string type; // e.g., 'P' for pawn, 'K' for king, etc.
+    bool isWhite;
+};
 
-//move pieces code
+Piece* selectedPiece = nullptr; // Pointer to the selected piece
+sf::Vector2i selectedPos;
 sf::Vector2i selectedSquare(-1, -1); // (-1, -1) = nothing selected
 bool isSelecting = false;
 
-extern std::string board[8][8]; // assuming 2D board
+// saving the board as an object  instead of just a string to give me flexibility in the future
+// This will allow me to add more functionality later, such as piece movement, capturing, etc.
+// Each Piece pointer will point to a Piece object, or nullptr if the square is empty
+
+Piece* board[8][8] = {nullptr};
 
 
-std::string board[8][8] = {
-    "black-rook", "black-knight", "black-bishop", "black-queen", "black-king", "black-bishop", "black-knight", "black-rook",
-    "black-pawn", "black-pawn", "black-pawn", "black-pawn", "black-pawn", "black-pawn", "black-pawn", "black-pawn",
-    "", "", "", "", "", "", "", "",
-    "", "", "", "", "", "", "", "",
-    "", "", "", "", "", "", "", "",
-    "", "", "", "", "", "", "", "",
-    "white-pawn", "white-pawn", "white-pawn", "white-pawn", "white-pawn", "white-pawn", "white-pawn", "white-pawn",
-    "white-rook", "white-knight", "white-bishop", "white-queen", "white-king", "white-bishop", "white-knight", "white-rook"
-};
 
 
 void drawBoard(sf::RenderWindow& window) {
@@ -36,6 +37,14 @@ void drawBoard(sf::RenderWindow& window) {
     }
 }
 
+Piece* createPiece(std::string name, std::map<std::string, sf::Texture>& textures) {
+    Piece* piece = new Piece;
+    piece->sprite.setTexture(textures[name]);
+    piece->sprite.setScale(TILE_SIZE / 128.0f, TILE_SIZE / 128.0f);
+    piece->type = name.back(); // crude type detection
+    piece->isWhite = name.find("white") != std::string::npos;
+    return piece;
+}
 
 void loadTextures(std::map<std::string, sf::Texture>& textures) {
     std::string pieces[] = {
@@ -51,47 +60,109 @@ void loadTextures(std::map<std::string, sf::Texture>& textures) {
 	}
 
 
-	void drawPieces(sf::RenderWindow& window, std::map<std::string, sf::Texture>& textures) {
-		const float tileSize = 100.0f;
-		const float textureSize = 128.0f; // assuming 256x256 PNGs
-	
-		for (int row = 0; row < 8; ++row) {
-			for (int col = 0; col < 8; ++col) {
-                std::string piece = board[row][col];
-				if (piece != "") {
-					sf::Sprite sprite;
-					sprite.setTexture(textures[piece]);
-	
-					// Scale up the sprite to fit the tile
-					float scale = tileSize / textureSize;
-					sprite.setScale(scale, scale);
-	
-					// Compute offset to center the piece
-					float offset = (tileSize - textureSize * scale) / 2.0f;
-					sprite.setPosition(col * tileSize + offset, row * tileSize + offset);
-	
-					window.draw(sprite);
-				}
-			}
-		}
-	}
+    void drawPieces(sf::RenderWindow& window) {
+        for (int row = 0; row < 8; ++row) {
+            for (int col = 0; col < 8; ++col) {
+                Piece* piece = board[row][col];
+                if (piece) {
+                    float offset = (TILE_SIZE - 128.0f * piece->sprite.getScale().x) / 2.0f;
+                    piece->sprite.setPosition(col * TILE_SIZE + offset, row * TILE_SIZE + offset);
+                    window.draw(piece->sprite);
+                }
+            }
+        }
+    }
+
+
+    void default_board(std::map<std::string, sf::Texture>& textures) {
+        for (int i = 0; i < 8; ++i) {
+            board[1][i] = createPiece("black-pawn", textures);
+            board[6][i] = createPiece("white-pawn", textures);
+        }
+        board[0][0] = createPiece("black-rook", textures);
+        board[0][1] = createPiece("black-knight", textures);
+        board[0][2] = createPiece("black-bishop", textures);
+        board[0][3] = createPiece("black-queen", textures);
+        board[0][4] = createPiece("black-king", textures);
+        board[0][5] = createPiece("black-bishop", textures);
+        board[0][6] = createPiece("black-knight", textures);
+        board[0][7] = createPiece("black-rook", textures);
+        board[7][0] = createPiece("white-rook", textures);
+        board[7][1] = createPiece("white-knight", textures);
+        board[7][2] = createPiece("white-bishop", textures);
+        board[7][3] = createPiece("white-queen", textures);
+        board[7][4] = createPiece("white-king", textures);
+        board[7][5] = createPiece("white-bishop", textures);
+        board[7][6] = createPiece("white-knight", textures);
+        board[7][7] = createPiece("white-rook", textures);
+        // Initialize empty squares
+        
+        for (int row = 2; row < 6; ++row) {
+            for (int col = 0; col < 8; ++col) {
+                board[row][col] = nullptr;
+            }
+        }
+    }
+
+
 	
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 800), "C++ Chess");
     std::map<std::string, sf::Texture> textures;
     loadTextures(textures);
+    default_board(textures);
+
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
+
+            if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+            {
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                int col = mousePos.x / TILE_SIZE;
+                int row = mousePos.y / TILE_SIZE;
+                if (!selectedPiece)
+                {
+                    if(board[row][col] != nullptr){
+                        selectedPiece = board[row][col];
+                        selectedPos = sf::Vector2i(row, col);
+                        std::cout << "Selected piece: " << selectedPiece->type << " at (" << col << ", " << row << ")\n";
+                    }                
+                }else
+                {
+                    if (board[row][col] == nullptr)
+                    {
+                        board[row][col] = selectedPiece;
+                        board[selectedPos.x][selectedPos.y] = nullptr;
+                        std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
+
+                        selectedPiece = nullptr;
+                        selectedPos = sf::Vector2i(-1, -1);
+
+                    }else
+                    {
+                        // If the square is occupied, deselect the piece
+                        selectedPiece = nullptr;
+                        selectedPos = sf::Vector2i(-1, -1);
+                        std::cout << "Deselected piece at (" << col << ", " << row << ")\n";
+                    }
+                    
+                }
+
+            }
+            
         }
 		window.clear();
 		drawBoard(window);
-		drawPieces(window, textures);
-
+        drawPieces(window);
         window.display();
     }
-
+}
+    for (int row = 0; row < 8; ++row)
+        for (int col = 0; col < 8; ++col)
+            delete board[row][col];
     return 0;
 }
+
