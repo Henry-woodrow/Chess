@@ -104,7 +104,37 @@ void loadTextures(std::map<std::string, sf::Texture>& textures) {
         }
     }
 
+void movePiece(sf::RenderWindow& window) {
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+    int col = mousePos.x / TILE_SIZE;
+    int row = mousePos.y / TILE_SIZE;
+    if (!selectedPiece)
+    {
+        if(board[row][col] != nullptr){
+            selectedPiece = board[row][col];
+            selectedPos = sf::Vector2i(row, col);
+        }                
+    }else
+    {
+        if (board[row][col] == nullptr)
+        {
+            board[row][col] = selectedPiece;
+            board[selectedPos.x][selectedPos.y] = nullptr;
+            std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
 
+            selectedPiece = nullptr;
+            selectedPos = sf::Vector2i(-1, -1);
+
+        }else
+        {
+            // If the square is occupied, deselect the piece
+            selectedPiece = nullptr;
+            selectedPos = sf::Vector2i(-1, -1);
+            std::cout << "Deselected piece at (" << col << ", " << row << ")\n";
+        }
+        
+    }
+}
 	
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 800), "C++ Chess");
@@ -119,38 +149,7 @@ int main() {
                 window.close();
 
             if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-            {
-                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                int col = mousePos.x / TILE_SIZE;
-                int row = mousePos.y / TILE_SIZE;
-                if (!selectedPiece)
-                {
-                    if(board[row][col] != nullptr){
-                        selectedPiece = board[row][col];
-                        selectedPos = sf::Vector2i(row, col);
-                        std::cout << "Selected piece: " << selectedPiece->type << " at (" << col << ", " << row << ")\n";
-                    }                
-                }else
-                {
-                    if (board[row][col] == nullptr)
-                    {
-                        board[row][col] = selectedPiece;
-                        board[selectedPos.x][selectedPos.y] = nullptr;
-                        std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
-
-                        selectedPiece = nullptr;
-                        selectedPos = sf::Vector2i(-1, -1);
-
-                    }else
-                    {
-                        // If the square is occupied, deselect the piece
-                        selectedPiece = nullptr;
-                        selectedPos = sf::Vector2i(-1, -1);
-                        std::cout << "Deselected piece at (" << col << ", " << row << ")\n";
-                    }
-                    
-                }
-
+                movePiece(window);
             }
             
         }
@@ -159,7 +158,7 @@ int main() {
         drawPieces(window);
         window.display();
     }
-}
+
     for (int row = 0; row < 8; ++row)
         for (int col = 0; col < 8; ++col)
             delete board[row][col];
