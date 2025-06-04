@@ -7,7 +7,7 @@ const int BOARD_SIZE = 8;
 
 struct Piece {
     sf::Sprite sprite;
-    std::string type; // e.g., 'P' for pawn, 'K' for king, etc.
+    std::string type; 
     bool isWhite;
 };
 
@@ -41,7 +41,7 @@ Piece* createPiece(std::string name, std::map<std::string, sf::Texture>& texture
     Piece* piece = new Piece;
     piece->sprite.setTexture(textures[name]);
     piece->sprite.setScale(TILE_SIZE / 128.0f, TILE_SIZE / 128.0f);
-    piece->type = name.back(); // crude type detection
+    piece->type = name; // crude type detection
     piece->isWhite = name.find("white") != std::string::npos;
     return piece;
 }
@@ -104,33 +104,78 @@ void loadTextures(std::map<std::string, sf::Texture>& textures) {
         }
     }
 
+void moveWhitePawn(int row, int col){
+    std::cout << "[" << std::to_string(row) << " ] ""[" << std::to_string(col) << " ] ";
+    //make sure piece cant move out of bounds of the column
+    if(board[row][col] == nullptr){
+        if(col  == selectedPiece->sprite.getPosition().x / TILE_SIZE){
+            // checks if its the first move of the pawn
+            if(selectedPos.x == 6){
+                if (row == selectedPos.x -1 || row == selectedPos.x -2) {
+                    board[row][col] = selectedPiece;
+                    board[selectedPos.x][selectedPos.y] = nullptr;
+                    std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
+                    selectedPiece = nullptr;
+                    selectedPos = sf::Vector2i(-1, -1);
+                }
+            }
+            else if(row == selectedPos.x -1){
+                board[row][col] = selectedPiece;
+                board[selectedPos.x][selectedPos.y] = nullptr;
+                std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
+                selectedPiece = nullptr;
+                selectedPos = sf::Vector2i(-1, -1);
+            }
+        }
+    }else if (board[selectedPos.x-1][selectedPos.y-1] != nullptr && board[selectedPos.x-1][selectedPos.y-1]->isWhite == false){
+        // hopefully clears the piece in the square
+        board[row][col] = nullptr;
+        // moves the piece to the new square
+        board[row][col] = selectedPiece;
+        board[selectedPos.x][selectedPos.y] = nullptr;
+        std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
+        selectedPiece = nullptr;
+        selectedPos = sf::Vector2i(-1, -1);
+
+    }
+    else if (board[selectedPos.x+1][selectedPos.y+1] != nullptr && board[selectedPos.x-1][selectedPos.y+1]->isWhite == false){
+        board[row][col] = selectedPiece;
+        board[selectedPos.x][selectedPos.y] = nullptr;
+        std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
+        selectedPiece = nullptr;
+        selectedPos = sf::Vector2i(-1, -1);
+    }else
+    {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+    }
+}
+
+
 void movePiece(sf::RenderWindow& window) {
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
     int col = mousePos.x / TILE_SIZE;
     int row = mousePos.y / TILE_SIZE;
     if (!selectedPiece)
     {
+        // If no piece is selected, select the piece at the clicked square
         if(board[row][col] != nullptr){
             selectedPiece = board[row][col];
             selectedPos = sf::Vector2i(row, col);
         }                
     }else
     {
+        // If a piece is selected, check if the clicked square is empty
         if (board[row][col] == nullptr)
-        {
-            board[row][col] = selectedPiece;
-            board[selectedPos.x][selectedPos.y] = nullptr;
-            std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
-
-            selectedPiece = nullptr;
-            selectedPos = sf::Vector2i(-1, -1);
-
-        }else
         {
             // If the square is occupied, deselect the piece
             selectedPiece = nullptr;
             selectedPos = sf::Vector2i(-1, -1);
             std::cout << "Deselected piece at (" << col << ", " << row << ")\n";
+        }
+
+        //row and col are the coordinates of the square where the piece is being moved
+        if(selectedPiece->type == "white-pawn"){
+            moveWhitePawn(row, col);
         }
         
     }
