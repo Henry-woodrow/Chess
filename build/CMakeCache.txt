@@ -22,7 +22,7 @@ CMAKE_AR:FILEPATH=/usr/bin/ar
 
 //Choose the type of build, options are: None Debug Release RelWithDebInfo
 // MinSizeRel ...
-CMAKE_BUILD_TYPE:STRING=
+CMAKE_BUILD_TYPE:STRING=Debug
 
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
@@ -229,15 +229,6 @@ chess_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 chess_SOURCE_DIR:STATIC=/home/henrywoodrow/repos/chess
-
-//Value Computed by CMake
-sfml-chess_BINARY_DIR:STATIC=/home/henrywoodrow/repos/chess/build
-
-//Value Computed by CMake
-sfml-chess_IS_TOP_LEVEL:STATIC=ON
-
-//Value Computed by CMake
-sfml-chess_SOURCE_DIR:STATIC=/home/henrywoodrow/repos/chess
 
 
 ########################

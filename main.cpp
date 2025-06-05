@@ -99,12 +99,14 @@ void loadTextures(std::map<std::string, sf::Texture>& textures) {
         }
     }
 
+
+    
     void moveWhitePawn(int row, int col){
         std::cout << "[" << std::to_string(row) << " ] ""[" << std::to_string(col) << " ] ";
         //makes sure the selected piece is not null
         if(board[row][col] == nullptr){
             //make sure piece cant move out of bounds of the column
-            if(col  == selectedPiece->sprite.getPosition().x / TILE_SIZE){
+            if(selectedPiece && col == selectedPiece->sprite.getPosition().x / TILE_SIZE){
                 // checks if its the first move of the pawn
                 if(selectedPos.x == 6){
                     if (row == selectedPos.x -1 || row == selectedPos.x -2) {
@@ -123,7 +125,7 @@ void loadTextures(std::map<std::string, sf::Texture>& textures) {
                     selectedPos = sf::Vector2i(-1, -1);
                 }
             }
-        }else if (board[selectedPos.x-1][selectedPos.y-1] != nullptr && board[selectedPos.x-1][selectedPos.y-1]->isWhite == false){
+        }else if (selectedPos.x > 0 && selectedPos.y > 0 && board[selectedPos.x-1][selectedPos.y-1] != nullptr && board[selectedPos.x-1][selectedPos.y-1]->isWhite == false){
             // hopefully clears the piece in the square
             board[row][col] = nullptr;
             // moves the piece to the new square
@@ -133,7 +135,7 @@ void loadTextures(std::map<std::string, sf::Texture>& textures) {
             selectedPiece = nullptr;
             selectedPos = sf::Vector2i(-1, -1);
         }
-        else if (board[selectedPos.x+1][selectedPos.y+1] != nullptr && board[selectedPos.x-1][selectedPos.y+1]->isWhite == false){
+        else if (selectedPiece && selectedPos.x < BOARD_SIZE - 1 && selectedPos.y < BOARD_SIZE - 1 && board[selectedPos.x+1][selectedPos.y+1] != nullptr && board[selectedPos.x+1][selectedPos.y+1]->isWhite == false){
             board[row][col] = selectedPiece;
             board[selectedPos.x][selectedPos.y] = nullptr;
             std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
@@ -159,6 +161,7 @@ void loadTextures(std::map<std::string, sf::Texture>& textures) {
             }                
         }else
         {
+
             // If a piece is selected, check if the clicked square is empty
             if (board[row][col] == nullptr)
             {
@@ -180,7 +183,7 @@ int main() {
     std::map<std::string, sf::Texture> textures;
     loadTextures(textures);
     default_board(textures);
-
+    std::cout << "Program started" << std::endl;
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {

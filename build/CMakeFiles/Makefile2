@@ -63,7 +63,7 @@ CMAKE_BINARY_DIR = /home/henrywoodrow/repos/chess/build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/sfml-chess.dir/all
+all: CMakeFiles/chess.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -71,34 +71,34 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/sfml-chess.dir/clean
+clean: CMakeFiles/chess.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/sfml-chess.dir
+# Target rules for target CMakeFiles/chess.dir
 
 # All Build rule for target.
-CMakeFiles/sfml-chess.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sfml-chess.dir/build.make CMakeFiles/sfml-chess.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sfml-chess.dir/build.make CMakeFiles/sfml-chess.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/henrywoodrow/repos/chess/build/CMakeFiles --progress-num=1,2 "Built target sfml-chess"
-.PHONY : CMakeFiles/sfml-chess.dir/all
+CMakeFiles/chess.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess.dir/build.make CMakeFiles/chess.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess.dir/build.make CMakeFiles/chess.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/henrywoodrow/repos/chess/build/CMakeFiles --progress-num=1,2 "Built target chess"
+.PHONY : CMakeFiles/chess.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/sfml-chess.dir/rule: cmake_check_build_system
+CMakeFiles/chess.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/henrywoodrow/repos/chess/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/sfml-chess.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/chess.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/henrywoodrow/repos/chess/build/CMakeFiles 0
-.PHONY : CMakeFiles/sfml-chess.dir/rule
+.PHONY : CMakeFiles/chess.dir/rule
 
 # Convenience name for target.
-sfml-chess: CMakeFiles/sfml-chess.dir/rule
-.PHONY : sfml-chess
+chess: CMakeFiles/chess.dir/rule
+.PHONY : chess
 
 # clean rule for target.
-CMakeFiles/sfml-chess.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sfml-chess.dir/build.make CMakeFiles/sfml-chess.dir/clean
-.PHONY : CMakeFiles/sfml-chess.dir/clean
+CMakeFiles/chess.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess.dir/build.make CMakeFiles/chess.dir/clean
+.PHONY : CMakeFiles/chess.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

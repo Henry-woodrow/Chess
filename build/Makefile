@@ -117,24 +117,24 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named sfml-chess
+# Target rules for targets named chess
 
 # Build rule for target.
-sfml-chess: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 sfml-chess
-.PHONY : sfml-chess
+chess: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 chess
+.PHONY : chess
 
 # fast build rule for target.
-sfml-chess/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sfml-chess.dir/build.make CMakeFiles/sfml-chess.dir/build
-.PHONY : sfml-chess/fast
+chess/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess.dir/build.make CMakeFiles/chess.dir/build
+.PHONY : chess/fast
 
 main.o: main.cpp.o
 .PHONY : main.o
 
 # target to build an object file
 main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sfml-chess.dir/build.make CMakeFiles/sfml-chess.dir/main.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess.dir/build.make CMakeFiles/chess.dir/main.cpp.o
 .PHONY : main.cpp.o
 
 main.i: main.cpp.i
@@ -142,7 +142,7 @@ main.i: main.cpp.i
 
 # target to preprocess a source file
 main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sfml-chess.dir/build.make CMakeFiles/sfml-chess.dir/main.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess.dir/build.make CMakeFiles/chess.dir/main.cpp.i
 .PHONY : main.cpp.i
 
 main.s: main.cpp.s
@@ -150,7 +150,7 @@ main.s: main.cpp.s
 
 # target to generate assembly for a file
 main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/sfml-chess.dir/build.make CMakeFiles/sfml-chess.dir/main.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chess.dir/build.make CMakeFiles/chess.dir/main.cpp.s
 .PHONY : main.cpp.s
 
 # Help Target
@@ -161,7 +161,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... sfml-chess"
+	@echo "... chess"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
