@@ -1,3 +1,0 @@
-/home/henrywoodrow/repos/chess/build/CMakeFiles/chess.dir
-/home/henrywoodrow/repos/chess/build/CMakeFiles/edit_cache.dir
-/home/henrywoodrow/repos/chess/build/CMakeFiles/rebuild_cache.dir
