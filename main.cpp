@@ -20,6 +20,28 @@ bool isInsideBoard(int row, int col) {
     return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
 }
 
+bool isPathClear(int startRow, int startCol, int endRow, int endCol) {
+    int dRow = (endRow > startRow) - (endRow < startRow);
+    int dCol = (endCol > startCol) - (endCol < startCol);
+    int r = startRow + dRow;
+    int c = startCol + dCol;
+    while (r != endRow || c != endCol) {
+        if (board[r][c] != nullptr) return false;
+        r += dRow;
+        c += dCol;
+    }
+    return true;
+}
+
+void finalizeMove(int startRow, int startCol, int row, int col) {
+    if (board[row][col] != nullptr) delete board[row][col];
+    board[row][col] = selectedPiece;
+    board[startRow][startCol] = nullptr;
+    std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
+    selectedPiece = nullptr;
+    selectedPos = sf::Vector2i(-1, -1);
+}
+
 void drawBoard(sf::RenderWindow& window) {
     sf::RectangleShape square(sf::Vector2f(TILE_SIZE, TILE_SIZE));
     for (int row = 0; row < BOARD_SIZE; ++row) {
@@ -130,6 +152,156 @@ void moveWhitePawn(int row, int col) {
     selectedPos = sf::Vector2i(-1, -1);
 }
 
+void moveBlackPawn(int row, int col) {
+    if (!selectedPiece || selectedPiece->type != "black-pawn" || !isInsideBoard(row, col)) {
+        std::cout << "Invalid move attempt.\n";
+        return;
+    }
+
+    int startRow = selectedPos.x;
+    int startCol = selectedPos.y;
+
+    int dy = row - startRow;
+    int dx = col - startCol;
+
+    bool moved = false;
+
+    // Forward move
+    if (dx == 0) {
+        if (dy == 1 && board[row][col] == nullptr) {
+            moved = true;
+        } else if (dy == 2 && startRow == 1 && board[row][col] == nullptr && board[startRow + 1][col] == nullptr) {
+            moved = true;
+        }
+    }
+    // Capture move
+    else if (abs(dx) == 1 && dy == 1 && board[row][col] != nullptr && board[row][col]->isWhite) {
+        delete board[row][col];
+        moved = true;
+    }
+
+    if (moved) {
+        finalizeMove(startRow, startCol, row, col);
+    } else {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+        selectedPiece = nullptr;
+        selectedPos = sf::Vector2i(-1, -1);
+    }
+}
+
+void moveRook(int row, int col) {
+    if (!selectedPiece || selectedPiece->type.find("rook") == std::string::npos || !isInsideBoard(row, col)) {
+        std::cout << "Invalid move attempt.\n";
+        return;
+    }
+
+    int startRow = selectedPos.x;
+    int startCol = selectedPos.y;
+
+    if (startRow != row && startCol != col) {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+    } else if (!isPathClear(startRow, startCol, row, col) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+    } else {
+        finalizeMove(startRow, startCol, row, col);
+        return;
+    }
+
+    selectedPiece = nullptr;
+    selectedPos = sf::Vector2i(-1, -1);
+}
+
+void moveBishop(int row, int col) {
+    if (!selectedPiece || selectedPiece->type.find("bishop") == std::string::npos || !isInsideBoard(row, col)) {
+        std::cout << "Invalid move attempt.\n";
+        return;
+    }
+
+    int startRow = selectedPos.x;
+    int startCol = selectedPos.y;
+    if (abs(row - startRow) != abs(col - startCol)) {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+    } else if (!isPathClear(startRow, startCol, row, col) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+    } else {
+        finalizeMove(startRow, startCol, row, col);
+        return;
+    }
+
+    selectedPiece = nullptr;
+    selectedPos = sf::Vector2i(-1, -1);
+}
+
+void moveKnight(int row, int col) {
+    if (!selectedPiece || selectedPiece->type.find("knight") == std::string::npos || !isInsideBoard(row, col)) {
+        std::cout << "Invalid move attempt.\n";
+        return;
+    }
+
+    int startRow = selectedPos.x;
+    int startCol = selectedPos.y;
+    int dr = abs(row - startRow);
+    int dc = abs(col - startCol);
+
+    if (!((dr == 2 && dc == 1) || (dr == 1 && dc == 2)) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+    } else {
+        finalizeMove(startRow, startCol, row, col);
+        return;
+    }
+
+    selectedPiece = nullptr;
+    selectedPos = sf::Vector2i(-1, -1);
+}
+
+void moveQueen(int row, int col) {
+    if (!selectedPiece || selectedPiece->type.find("queen") == std::string::npos || !isInsideBoard(row, col)) {
+        std::cout << "Invalid move attempt.\n";
+        return;
+    }
+
+    int startRow = selectedPos.x;
+    int startCol = selectedPos.y;
+
+    bool straight = (startRow == row || startCol == col);
+    bool diagonal = abs(row - startRow) == abs(col - startCol);
+
+    if (!straight && !diagonal) {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+    } else if (!isPathClear(startRow, startCol, row, col) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+    } else {
+        finalizeMove(startRow, startCol, row, col);
+        return;
+    }
+
+    selectedPiece = nullptr;
+    selectedPos = sf::Vector2i(-1, -1);
+}
+
+void moveKing(int row, int col) {
+    if (!selectedPiece || selectedPiece->type.find("king") == std::string::npos || !isInsideBoard(row, col)) {
+        std::cout << "Invalid move attempt.\n";
+        return;
+    }
+
+    int startRow = selectedPos.x;
+    int startCol = selectedPos.y;
+
+    int dr = abs(row - startRow);
+    int dc = abs(col - startCol);
+
+    if ((dr > 1 || dc > 1) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
+        std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+    } else {
+        finalizeMove(startRow, startCol, row, col);
+        return;
+    }
+
+    selectedPiece = nullptr;
+    selectedPos = sf::Vector2i(-1, -1);
+}
+
 void movePiece(int row, int col, sf::RenderWindow& window) {
     if (!isInsideBoard(row, col)) return;
 
@@ -141,14 +313,27 @@ void movePiece(int row, int col, sf::RenderWindow& window) {
     } else {
         if (selectedPiece->type == "white-pawn") {
             moveWhitePawn(row, col);
+        } else if (selectedPiece->type == "black-pawn") {
+            moveBlackPawn(row, col);
+        } else if (selectedPiece->type.find("rook") != std::string::npos) {
+            moveRook(row, col);
+        } else if (selectedPiece->type.find("knight") != std::string::npos) {
+            moveKnight(row, col);
+        } else if (selectedPiece->type.find("bishop") != std::string::npos) {
+            moveBishop(row, col);
+        } else if (selectedPiece->type.find("queen") != std::string::npos) {
+            moveQueen(row, col);
+        } else if (selectedPiece->type.find("king") != std::string::npos) {
+            moveKing(row, col);
         } else {
-            std::cout << "Only white pawns are implemented.\n";
+            std::cout << "Unknown piece type.\n";
             selectedPiece = nullptr;
             selectedPos = sf::Vector2i(-1, -1);
         }
     }
 }
 
+#ifndef UNIT_TEST
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 800), "C++ Chess");
     std::map<std::string, sf::Texture> textures;
@@ -182,3 +367,4 @@ int main() {
 
     return 0;
 }
+#endif
