@@ -150,6 +150,17 @@ void testNoLeavingKingInCheck() {
     assert(board[4][0] == wRook && board[4][1] == nullptr);
 }
 
+void testPawnPromotion() {
+    resetBoardState();
+    Piece* p = makePiece("white-pawn", true);
+    board[1][0] = p;
+    selectedPiece = p;
+    selectedPos = {1,0};
+    moveWhitePawn(0,0);
+    assert(board[0][0] == p);
+    assert(board[0][0]->type == "white-queen");
+}
+
 int main() {
     testWhitePawn();
     testBlackPawn();
@@ -162,6 +173,7 @@ int main() {
     testCannotCaptureKing();
     testDetectCheck();
     testNoLeavingKingInCheck();
+    testPawnPromotion();
     std::cout << "All movement tests passed\n";
     resetBoardState();
     return 0;
