@@ -2,6 +2,7 @@
 #include <map>
 #include <string>
 #include <iostream>
+#include <cctype>
 
 const int TILE_SIZE = 100;
 const int BOARD_SIZE = 8;
@@ -16,6 +17,7 @@ Piece* selectedPiece = nullptr;
 sf::Vector2i selectedPos;
 Piece* board[8][8] = {nullptr};
 bool isWhiteTurn = true;
+std::map<std::string, sf::Texture> textures;
 
 bool isInsideBoard(int row, int col) {
     return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
@@ -132,6 +134,29 @@ bool wouldLeaveInCheck(int startRow, int startCol, int endRow, int endCol) {
     return inCheck;
 }
 
+void promotePawn(Piece* pawn) {
+    std::string color = pawn->isWhite ? "white" : "black";
+    std::string choice;
+#ifdef UNIT_TEST
+    choice = "queen";
+#else
+    std::cout << "Promote pawn to (q)ueen, (r)ook, (b)ishop, or k(n)ight? ";
+    char c;
+    std::cin >> c;
+    c = std::tolower(c);
+    if (c == 'r')
+        choice = "rook";
+    else if (c == 'b')
+        choice = "bishop";
+    else if (c == 'n')
+        choice = "knight";
+    else
+        choice = "queen";
+    pawn->sprite.setTexture(textures[color + "-" + choice]);
+#endif
+    pawn->type = color + "-" + choice;
+}
+
 bool finalizeMove(int startRow, int startCol, int row, int col) {
     if (board[row][col] && board[row][col]->type.find("king") != std::string::npos) {
         std::cout << "Cannot capture the king.\n";
@@ -144,9 +169,13 @@ bool finalizeMove(int startRow, int startCol, int row, int col) {
     if (board[row][col] != nullptr) delete board[row][col];
     board[row][col] = selectedPiece;
     board[startRow][startCol] = nullptr;
+    Piece* movedPiece = selectedPiece;
     std::cout << "Moved piece: " << board[row][col]->type << " to (" << col << ", " << row << ")\n";
     selectedPiece = nullptr;
     selectedPos = sf::Vector2i(-1, -1);
+    if (movedPiece->type.find("pawn") != std::string::npos && (row == 0 || row == 7)) {
+        promotePawn(movedPiece);
+    }
     isWhiteTurn = !isWhiteTurn;
 
     int kRow, kCol;
@@ -169,7 +198,7 @@ void drawBoard(sf::RenderWindow& window) {
     }
 }
 
-Piece* createPiece(std::string name, std::map<std::string, sf::Texture>& textures) {
+Piece* createPiece(std::string name) {
     Piece* piece = new Piece;
     piece->sprite.setTexture(textures[name]);
     piece->sprite.setScale(TILE_SIZE / 128.0f, TILE_SIZE / 128.0f);
@@ -178,7 +207,7 @@ Piece* createPiece(std::string name, std::map<std::string, sf::Texture>& texture
     return piece;
 }
 
-void loadTextures(std::map<std::string, sf::Texture>& textures) {
+void loadTextures() {
     std::string pieces[] = {
         "white-pawn", "white-knight", "white-bishop", "white-rook", "white-queen", "white-king",
         "black-pawn", "black-knight", "black-bishop", "black-rook", "black-queen", "black-king"
@@ -203,27 +232,27 @@ void drawPieces(sf::RenderWindow& window) {
     }
 }
 
-void default_board(std::map<std::string, sf::Texture>& textures) {
+void default_board() {
     for (int i = 0; i < 8; ++i) {
-        board[1][i] = createPiece("black-pawn", textures);
-        board[6][i] = createPiece("white-pawn", textures);
+        board[1][i] = createPiece("black-pawn");
+        board[6][i] = createPiece("white-pawn");
     }
-    board[0][0] = createPiece("black-rook", textures);
-    board[0][1] = createPiece("black-knight", textures);
-    board[0][2] = createPiece("black-bishop", textures);
-    board[0][3] = createPiece("black-queen", textures);
-    board[0][4] = createPiece("black-king", textures);
-    board[0][5] = createPiece("black-bishop", textures);
-    board[0][6] = createPiece("black-knight", textures);
-    board[0][7] = createPiece("black-rook", textures);
-    board[7][0] = createPiece("white-rook", textures);
-    board[7][1] = createPiece("white-knight", textures);
-    board[7][2] = createPiece("white-bishop", textures);
-    board[7][3] = createPiece("white-queen", textures);
-    board[7][4] = createPiece("white-king", textures);
-    board[7][5] = createPiece("white-bishop", textures);
-    board[7][6] = createPiece("white-knight", textures);
-    board[7][7] = createPiece("white-rook", textures);
+    board[0][0] = createPiece("black-rook");
+    board[0][1] = createPiece("black-knight");
+    board[0][2] = createPiece("black-bishop");
+    board[0][3] = createPiece("black-queen");
+    board[0][4] = createPiece("black-king");
+    board[0][5] = createPiece("black-bishop");
+    board[0][6] = createPiece("black-knight");
+    board[0][7] = createPiece("black-rook");
+    board[7][0] = createPiece("white-rook");
+    board[7][1] = createPiece("white-knight");
+    board[7][2] = createPiece("white-bishop");
+    board[7][3] = createPiece("white-queen");
+    board[7][4] = createPiece("white-king");
+    board[7][5] = createPiece("white-bishop");
+    board[7][6] = createPiece("white-knight");
+    board[7][7] = createPiece("white-rook");
 }
 
 void moveWhitePawn(int row, int col) {
@@ -488,9 +517,8 @@ void movePiece(int row, int col, sf::RenderWindow& window) {
 #ifndef UNIT_TEST
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 800), "C++ Chess");
-    std::map<std::string, sf::Texture> textures;
-    loadTextures(textures);
-    default_board(textures);
+    loadTextures();
+    default_board();
     std::cout << "Program started" << std::endl;
 
     while (window.isOpen()) {
