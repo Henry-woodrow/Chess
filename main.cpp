@@ -3,6 +3,9 @@
 #include <string>
 #include <iostream>
 #include <cctype>
+#include <vector>
+#include <random>
+#include <utility>
 
 const int TILE_SIZE = 100;
 const int BOARD_SIZE = 8;
@@ -18,6 +21,10 @@ sf::Vector2i selectedPos;
 Piece* board[8][8] = {nullptr};
 bool isWhiteTurn = true;
 std::map<std::string, sf::Texture> textures;
+
+enum class GameState { MENU, SETTINGS, PLAYING };
+GameState gameState = GameState::MENU;
+bool aiEnabled = false;
 
 bool isInsideBoard(int row, int col) {
     return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
@@ -248,7 +255,21 @@ void drawPieces(sf::RenderWindow& window) {
     }
 }
 
+void clearBoard() {
+    for (int r = 0; r < 8; ++r) {
+        for (int c = 0; c < 8; ++c) {
+            delete board[r][c];
+            board[r][c] = nullptr;
+        }
+    }
+}
+
 void default_board() {
+    clearBoard();
+    isWhiteTurn = true;
+    selectedPiece = nullptr;
+    selectedPos = sf::Vector2i(-1, -1);
+
     for (int i = 0; i < 8; ++i) {
         board[1][i] = createPiece("black-pawn");
         board[6][i] = createPiece("white-pawn");
@@ -530,11 +551,106 @@ void movePiece(int row, int col, sf::RenderWindow& window) {
     }
 }
 
+void aiMove(sf::RenderWindow& window) {
+    if (isWhiteTurn) return;
+
+    std::vector<std::pair<int, int>> pieces;
+    for (int r = 0; r < 8; ++r) {
+        for (int c = 0; c < 8; ++c) {
+            if (board[r][c] && !board[r][c]->isWhite) {
+                pieces.emplace_back(r, c);
+            }
+        }
+    }
+    if (pieces.empty()) return;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> pieceDist(0, pieces.size() - 1);
+    std::uniform_int_distribution<> posDist(0, 7);
+
+    for (int attempts = 0; attempts < 1000 && !isWhiteTurn; ++attempts) {
+        auto [sr, sc] = pieces[pieceDist(gen)];
+        int er = posDist(gen);
+        int ec = posDist(gen);
+        Piece* p = board[sr][sc];
+        if (!p) continue;
+        bool turnBefore = isWhiteTurn;
+        selectedPiece = p;
+        selectedPos = sf::Vector2i(sr, sc);
+        if (p->type == "black-pawn") moveBlackPawn(er, ec);
+        else if (p->type.find("rook") != std::string::npos) moveRook(er, ec);
+        else if (p->type.find("knight") != std::string::npos) moveKnight(er, ec);
+        else if (p->type.find("bishop") != std::string::npos) moveBishop(er, ec);
+        else if (p->type.find("queen") != std::string::npos) moveQueen(er, ec);
+        else if (p->type.find("king") != std::string::npos) moveKing(er, ec);
+        if (isWhiteTurn != turnBefore) return;
+    }
+}
+
+void drawMenu(sf::RenderWindow& window) {
+    const sf::Font& font = sf::Font::getDefaultFont();
+    sf::RectangleShape pvp(sf::Vector2f(200, 50));
+    pvp.setPosition(300, 200);
+    sf::Text pvpText("Play", font, 24);
+    pvpText.setPosition(370, 210);
+
+    sf::RectangleShape ai(sf::Vector2f(200, 50));
+    ai.setPosition(300, 270);
+    sf::Text aiText("Play vs AI", font, 24);
+    aiText.setPosition(335, 280);
+
+    sf::RectangleShape settings(sf::Vector2f(200, 50));
+    settings.setPosition(300, 340);
+    sf::Text settingsText("Settings", font, 24);
+    settingsText.setPosition(350, 350);
+
+    sf::RectangleShape exit(sf::Vector2f(200, 50));
+    exit.setPosition(300, 410);
+    sf::Text exitText("Exit", font, 24);
+    exitText.setPosition(370, 420);
+
+    window.draw(pvp);
+    window.draw(ai);
+    window.draw(settings);
+    window.draw(exit);
+    window.draw(pvpText);
+    window.draw(aiText);
+    window.draw(settingsText);
+    window.draw(exitText);
+}
+
+void handleMenuClick(sf::Vector2i mousePos, sf::RenderWindow& window) {
+    sf::FloatRect pvpRect(300, 200, 200, 50);
+    sf::FloatRect aiRect(300, 270, 200, 50);
+    sf::FloatRect settingsRect(300, 340, 200, 50);
+    sf::FloatRect exitRect(300, 410, 200, 50);
+    if (pvpRect.contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y))) {
+        aiEnabled = false;
+        default_board();
+        gameState = GameState::PLAYING;
+    } else if (aiRect.contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y))) {
+        aiEnabled = true;
+        default_board();
+        gameState = GameState::PLAYING;
+    } else if (settingsRect.contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y))) {
+        gameState = GameState::SETTINGS;
+    } else if (exitRect.contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y))) {
+        window.close();
+    }
+}
+
+void drawSettings(sf::RenderWindow& window) {
+    const sf::Font& font = sf::Font::getDefaultFont();
+    sf::Text text("Settings - Click to return", font, 24);
+    text.setPosition(180, 300);
+    window.draw(text);
+}
+
 #ifndef UNIT_TEST
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 800), "C++ Chess");
     loadTextures();
-    default_board();
     std::cout << "Program started" << std::endl;
 
     while (window.isOpen()) {
@@ -545,22 +661,35 @@ int main() {
 
             if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
                 sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-                int col = mousePos.x / TILE_SIZE;
-                int row = mousePos.y / TILE_SIZE;
-                movePiece(row, col, window);
+                if (gameState == GameState::MENU) {
+                    handleMenuClick(mousePos, window);
+                } else if (gameState == GameState::PLAYING) {
+                    int col = mousePos.x / TILE_SIZE;
+                    int row = mousePos.y / TILE_SIZE;
+                    movePiece(row, col, window);
+                } else if (gameState == GameState::SETTINGS) {
+                    gameState = GameState::MENU;
+                }
             }
         }
 
+        if (gameState == GameState::PLAYING && aiEnabled && !isWhiteTurn) {
+            aiMove(window);
+        }
+
         window.clear();
-        drawBoard(window);
-        drawPieces(window);
+        if (gameState == GameState::MENU) {
+            drawMenu(window);
+        } else if (gameState == GameState::PLAYING) {
+            drawBoard(window);
+            drawPieces(window);
+        } else if (gameState == GameState::SETTINGS) {
+            drawSettings(window);
+        }
         window.display();
     }
 
-    for (int row = 0; row < 8; ++row)
-        for (int col = 0; col < 8; ++col)
-            delete board[row][col];
-
+    clearBoard();
     return 0;
 }
 #endif
