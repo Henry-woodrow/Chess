@@ -14,6 +14,7 @@ void resetBoardState() {
     }
     selectedPiece = nullptr;
     selectedPos = sf::Vector2i(-1, -1);
+    isWhiteTurn = true;
 }
 
 Piece* makePiece(const std::string& type, bool white) {
@@ -93,6 +94,23 @@ void testKing() {
     assert(board[5][5] == p && board[4][4] == nullptr);
 }
 
+void testTurnSwitch() {
+    resetBoardState();
+    Piece* wp = makePiece("white-pawn", true);
+    board[6][0] = wp;
+    selectedPiece = wp;
+    selectedPos = {6,0};
+    moveWhitePawn(5,0);
+    assert(!isWhiteTurn);
+
+    Piece* bp = makePiece("black-pawn", false);
+    board[1][0] = bp;
+    selectedPiece = bp;
+    selectedPos = {1,0};
+    moveBlackPawn(2,0);
+    assert(isWhiteTurn);
+}
+
 int main() {
     testWhitePawn();
     testBlackPawn();
@@ -101,6 +119,7 @@ int main() {
     testBishop();
     testQueen();
     testKing();
+    testTurnSwitch();
     std::cout << "All movement tests passed\n";
     resetBoardState();
     return 0;

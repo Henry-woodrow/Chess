@@ -15,6 +15,7 @@ struct Piece {
 Piece* selectedPiece = nullptr;
 sf::Vector2i selectedPos;
 Piece* board[8][8] = {nullptr};
+bool isWhiteTurn = true;
 
 bool isInsideBoard(int row, int col) {
     return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
@@ -40,6 +41,7 @@ void finalizeMove(int startRow, int startCol, int row, int col) {
     std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
     selectedPiece = nullptr;
     selectedPos = sf::Vector2i(-1, -1);
+    isWhiteTurn = !isWhiteTurn;
 }
 
 void drawBoard(sf::RenderWindow& window) {
@@ -136,20 +138,16 @@ void moveWhitePawn(int row, int col) {
     }
     // Capture move
     else if (abs(dx) == 1 && dy == -1 && board[row][col] != nullptr && !board[row][col]->isWhite) {
-        delete board[row][col]; // capture
         moved = true;
     }
 
     if (moved) {
-        board[row][col] = selectedPiece;
-        board[startRow][startCol] = nullptr;
-        std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
+        finalizeMove(startRow, startCol, row, col);
     } else {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
+        selectedPiece = nullptr;
+        selectedPos = sf::Vector2i(-1, -1);
     }
-
-    selectedPiece = nullptr;
-    selectedPos = sf::Vector2i(-1, -1);
 }
 
 void moveBlackPawn(int row, int col) {
@@ -176,7 +174,6 @@ void moveBlackPawn(int row, int col) {
     }
     // Capture move
     else if (abs(dx) == 1 && dy == 1 && board[row][col] != nullptr && board[row][col]->isWhite) {
-        delete board[row][col];
         moved = true;
     }
 
@@ -306,7 +303,7 @@ void movePiece(int row, int col, sf::RenderWindow& window) {
     if (!isInsideBoard(row, col)) return;
 
     if (!selectedPiece) {
-        if (board[row][col] != nullptr) {
+        if (board[row][col] != nullptr && board[row][col]->isWhite == isWhiteTurn) {
             selectedPiece = board[row][col];
             selectedPos = sf::Vector2i(row, col);
         }
