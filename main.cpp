@@ -34,14 +34,127 @@ bool isPathClear(int startRow, int startCol, int endRow, int endCol) {
     return true;
 }
 
-void finalizeMove(int startRow, int startCol, int row, int col) {
+void findKing(bool white, int& row, int& col) {
+    for (int r = 0; r < BOARD_SIZE; ++r) {
+        for (int c = 0; c < BOARD_SIZE; ++c) {
+            Piece* p = board[r][c];
+            if (p && p->isWhite == white && p->type.find("king") != std::string::npos) {
+                row = r;
+                col = c;
+                return;
+            }
+        }
+    }
+    row = col = -1;
+}
+
+bool isSquareAttacked(int row, int col, bool byWhite) {
+    // Pawns
+    int dir = byWhite ? -1 : 1;
+    int pr = row + dir;
+    if (isInsideBoard(pr, col - 1) && board[pr][col - 1] &&
+        board[pr][col - 1]->isWhite == byWhite && board[pr][col - 1]->type.find("pawn") != std::string::npos)
+        return true;
+    if (isInsideBoard(pr, col + 1) && board[pr][col + 1] &&
+        board[pr][col + 1]->isWhite == byWhite && board[pr][col + 1]->type.find("pawn") != std::string::npos)
+        return true;
+
+    // Knights
+    int knightMoves[8][2] = {{2,1},{1,2},{-1,2},{-2,1},{-2,-1},{-1,-2},{1,-2},{2,-1}};
+    for (auto& m : knightMoves) {
+        int r = row + m[0];
+        int c = col + m[1];
+        if (isInsideBoard(r,c) && board[r][c] && board[r][c]->isWhite == byWhite &&
+            board[r][c]->type.find("knight") != std::string::npos)
+            return true;
+    }
+
+    // Kings
+    for (int dr = -1; dr <= 1; ++dr) {
+        for (int dc = -1; dc <= 1; ++dc) {
+            if (dr == 0 && dc == 0) continue;
+            int r = row + dr;
+            int c = col + dc;
+            if (isInsideBoard(r,c) && board[r][c] && board[r][c]->isWhite == byWhite &&
+                board[r][c]->type.find("king") != std::string::npos)
+                return true;
+        }
+    }
+
+    // Rooks/Queens (straight lines)
+    int dirs[4][2] = {{1,0},{-1,0},{0,1},{0,-1}};
+    for (auto& d : dirs) {
+        int r = row + d[0];
+        int c = col + d[1];
+        while (isInsideBoard(r,c)) {
+            if (board[r][c]) {
+                if (board[r][c]->isWhite == byWhite &&
+                    (board[r][c]->type.find("rook") != std::string::npos ||
+                     board[r][c]->type.find("queen") != std::string::npos))
+                    return true;
+                break;
+            }
+            r += d[0];
+            c += d[1];
+        }
+    }
+
+    // Bishops/Queens (diagonals)
+    int bdirs[4][2] = {{1,1},{1,-1},{-1,1},{-1,-1}};
+    for (auto& d : bdirs) {
+        int r = row + d[0];
+        int c = col + d[1];
+        while (isInsideBoard(r,c)) {
+            if (board[r][c]) {
+                if (board[r][c]->isWhite == byWhite &&
+                    (board[r][c]->type.find("bishop") != std::string::npos ||
+                     board[r][c]->type.find("queen") != std::string::npos))
+                    return true;
+                break;
+            }
+            r += d[0];
+            c += d[1];
+        }
+    }
+    return false;
+}
+
+bool wouldLeaveInCheck(int startRow, int startCol, int endRow, int endCol) {
+    Piece* moving = board[startRow][startCol];
+    Piece* captured = board[endRow][endCol];
+    board[endRow][endCol] = moving;
+    board[startRow][startCol] = nullptr;
+    int kRow, kCol;
+    findKing(moving->isWhite, kRow, kCol);
+    bool inCheck = isSquareAttacked(kRow, kCol, !moving->isWhite);
+    board[startRow][startCol] = moving;
+    board[endRow][endCol] = captured;
+    return inCheck;
+}
+
+bool finalizeMove(int startRow, int startCol, int row, int col) {
+    if (board[row][col] && board[row][col]->type.find("king") != std::string::npos) {
+        std::cout << "Cannot capture the king.\n";
+        selectedPiece = nullptr;
+        selectedPos = sf::Vector2i(-1, -1);
+        return false;
+    }
+
+    bool moverIsWhite = selectedPiece->isWhite;
     if (board[row][col] != nullptr) delete board[row][col];
     board[row][col] = selectedPiece;
     board[startRow][startCol] = nullptr;
-    std::cout << "Moved piece: " << selectedPiece->type << " to (" << col << ", " << row << ")\n";
+    std::cout << "Moved piece: " << board[row][col]->type << " to (" << col << ", " << row << ")\n";
     selectedPiece = nullptr;
     selectedPos = sf::Vector2i(-1, -1);
     isWhiteTurn = !isWhiteTurn;
+
+    int kRow, kCol;
+    findKing(!moverIsWhite, kRow, kCol);
+    if (kRow != -1 && isSquareAttacked(kRow, kCol, moverIsWhite)) {
+        std::cout << (!moverIsWhite ? "White" : "Black") << " king is in check\n";
+    }
+    return true;
 }
 
 void drawBoard(sf::RenderWindow& window) {
@@ -142,7 +255,13 @@ void moveWhitePawn(int row, int col) {
     }
 
     if (moved) {
-        finalizeMove(startRow, startCol, row, col);
+        if (!wouldLeaveInCheck(startRow, startCol, row, col)) {
+            finalizeMove(startRow, startCol, row, col);
+        } else {
+            std::cout << "Move would leave king in check\n";
+            selectedPiece = nullptr;
+            selectedPos = sf::Vector2i(-1, -1);
+        }
     } else {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
         selectedPiece = nullptr;
@@ -178,7 +297,13 @@ void moveBlackPawn(int row, int col) {
     }
 
     if (moved) {
-        finalizeMove(startRow, startCol, row, col);
+        if (!wouldLeaveInCheck(startRow, startCol, row, col)) {
+            finalizeMove(startRow, startCol, row, col);
+        } else {
+            std::cout << "Move would leave king in check\n";
+            selectedPiece = nullptr;
+            selectedPos = sf::Vector2i(-1, -1);
+        }
     } else {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
         selectedPiece = nullptr;
@@ -200,7 +325,13 @@ void moveRook(int row, int col) {
     } else if (!isPathClear(startRow, startCol, row, col) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
     } else {
-        finalizeMove(startRow, startCol, row, col);
+        if (!wouldLeaveInCheck(startRow, startCol, row, col)) {
+            finalizeMove(startRow, startCol, row, col);
+        } else {
+            std::cout << "Move would leave king in check\n";
+            selectedPiece = nullptr;
+            selectedPos = sf::Vector2i(-1, -1);
+        }
         return;
     }
 
@@ -221,7 +352,13 @@ void moveBishop(int row, int col) {
     } else if (!isPathClear(startRow, startCol, row, col) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
     } else {
-        finalizeMove(startRow, startCol, row, col);
+        if (!wouldLeaveInCheck(startRow, startCol, row, col)) {
+            finalizeMove(startRow, startCol, row, col);
+        } else {
+            std::cout << "Move would leave king in check\n";
+            selectedPiece = nullptr;
+            selectedPos = sf::Vector2i(-1, -1);
+        }
         return;
     }
 
@@ -243,7 +380,13 @@ void moveKnight(int row, int col) {
     if (!((dr == 2 && dc == 1) || (dr == 1 && dc == 2)) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
     } else {
-        finalizeMove(startRow, startCol, row, col);
+        if (!wouldLeaveInCheck(startRow, startCol, row, col)) {
+            finalizeMove(startRow, startCol, row, col);
+        } else {
+            std::cout << "Move would leave king in check\n";
+            selectedPiece = nullptr;
+            selectedPos = sf::Vector2i(-1, -1);
+        }
         return;
     }
 
@@ -268,7 +411,13 @@ void moveQueen(int row, int col) {
     } else if (!isPathClear(startRow, startCol, row, col) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
     } else {
-        finalizeMove(startRow, startCol, row, col);
+        if (!wouldLeaveInCheck(startRow, startCol, row, col)) {
+            finalizeMove(startRow, startCol, row, col);
+        } else {
+            std::cout << "Move would leave king in check\n";
+            selectedPiece = nullptr;
+            selectedPos = sf::Vector2i(-1, -1);
+        }
         return;
     }
 
@@ -291,7 +440,13 @@ void moveKing(int row, int col) {
     if ((dr > 1 || dc > 1) || (board[row][col] && board[row][col]->isWhite == selectedPiece->isWhite)) {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
     } else {
-        finalizeMove(startRow, startCol, row, col);
+        if (!wouldLeaveInCheck(startRow, startCol, row, col)) {
+            finalizeMove(startRow, startCol, row, col);
+        } else {
+            std::cout << "Move would leave king in check\n";
+            selectedPiece = nullptr;
+            selectedPos = sf::Vector2i(-1, -1);
+        }
         return;
     }
 
