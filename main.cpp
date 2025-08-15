@@ -136,24 +136,40 @@ bool wouldLeaveInCheck(int startRow, int startCol, int endRow, int endCol) {
 
 void promotePawn(Piece* pawn) {
     std::string color = pawn->isWhite ? "white" : "black";
-    std::string choice;
+    std::string choice = "queen";
 #ifdef UNIT_TEST
-    choice = "queen";
+    // In tests, automatically promote to a queen
 #else
-    std::cout << "Promote pawn to (q)ueen, (r)ook, (b)ishop, or k(n)ight? ";
-    char c;
-    std::cin >> c;
-    c = std::tolower(c);
-    if (c == 'r')
-        choice = "rook";
-    else if (c == 'b')
-        choice = "bishop";
-    else if (c == 'n')
-        choice = "knight";
-    else
-        choice = "queen";
-    pawn->sprite.setTexture(textures[color + "-" + choice]);
+    sf::RenderWindow promo(sf::VideoMode(TILE_SIZE * 4, TILE_SIZE), "Promote Pawn");
+    sf::Sprite options[4];
+    std::string names[4] = {"queen", "rook", "bishop", "knight"};
+    for (int i = 0; i < 4; ++i) {
+        options[i].setTexture(textures[color + "-" + names[i]]);
+        options[i].setScale(TILE_SIZE / 128.0f, TILE_SIZE / 128.0f);
+        float offset = (TILE_SIZE - 128.0f * options[i].getScale().x) / 2.0f;
+        options[i].setPosition(i * TILE_SIZE + offset, offset);
+    }
+    while (promo.isOpen()) {
+        sf::Event event;
+        while (promo.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                promo.close();
+            }
+            if (event.type == sf::Event::MouseButtonPressed &&
+                event.mouseButton.button == sf::Mouse::Left) {
+                int col = event.mouseButton.x / TILE_SIZE;
+                if (col >= 0 && col < 4) {
+                    choice = names[col];
+                    promo.close();
+                }
+            }
+        }
+        promo.clear(sf::Color(200, 200, 200));
+        for (int i = 0; i < 4; ++i) promo.draw(options[i]);
+        promo.display();
+    }
 #endif
+    pawn->sprite.setTexture(textures[color + "-" + choice]);
     pawn->type = color + "-" + choice;
 }
 
