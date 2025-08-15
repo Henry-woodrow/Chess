@@ -111,6 +111,45 @@ void testTurnSwitch() {
     assert(isWhiteTurn);
 }
 
+void testCannotCaptureKing() {
+    resetBoardState();
+    Piece* rook = makePiece("white-rook", true);
+    Piece* king = makePiece("black-king", false);
+    board[4][0] = rook;
+    board[4][4] = king;
+    selectedPiece = rook;
+    selectedPos = {4,0};
+    moveRook(4,4);
+    assert(board[4][0] == rook && board[4][4] == king);
+}
+
+void testDetectCheck() {
+    resetBoardState();
+    Piece* rook = makePiece("white-rook", true);
+    Piece* king = makePiece("black-king", false);
+    board[4][0] = rook;
+    board[4][4] = king;
+    selectedPiece = rook;
+    selectedPos = {4,0};
+    moveRook(4,3);
+    assert(board[4][3] == rook);
+    assert(isSquareAttacked(4,4,true));
+}
+
+void testNoLeavingKingInCheck() {
+    resetBoardState();
+    Piece* wKing = makePiece("white-king", true);
+    Piece* wRook = makePiece("white-rook", true);
+    Piece* bRook = makePiece("black-rook", false);
+    board[4][4] = wKing;
+    board[4][0] = wRook;
+    board[4][7] = bRook;
+    selectedPiece = wRook;
+    selectedPos = {4,0};
+    moveRook(4,1);
+    assert(board[4][0] == wRook && board[4][1] == nullptr);
+}
+
 int main() {
     testWhitePawn();
     testBlackPawn();
@@ -120,6 +159,9 @@ int main() {
     testQueen();
     testKing();
     testTurnSwitch();
+    testCannotCaptureKing();
+    testDetectCheck();
+    testNoLeavingKingInCheck();
     std::cout << "All movement tests passed\n";
     resetBoardState();
     return 0;
