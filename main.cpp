@@ -6,6 +6,10 @@
 #include <vector>
 #include <random>
 #include <utility>
+#include <cstdlib>
+#include <cstdio>
+#include <optional>
+#include <sstream>
 
 const int TILE_SIZE = 100;
 const int BOARD_SIZE = 8;
@@ -25,6 +29,45 @@ std::map<std::string, sf::Texture> textures;
 enum class GameState { MENU, SETTINGS, PLAYING };
 GameState gameState = GameState::MENU;
 bool aiEnabled = false;
+
+struct AIMove { int sr, sc, er, ec; };
+
+std::string boardToSimpleString() {
+    std::ostringstream oss;
+    for (int r = 0; r < BOARD_SIZE; ++r) {
+        for (int c = 0; c < BOARD_SIZE; ++c) {
+            if (board[r][c]) {
+                oss << board[r][c]->type << ' ';
+            } else {
+                oss << "-- ";
+            }
+        }
+        if (r != BOARD_SIZE - 1) oss << '/';
+    }
+    return oss.str();
+}
+
+std::optional<AIMove> requestAIMoveFromChatGPT() {
+    const char* apiKey = std::getenv("OPENAI_API_KEY");
+    if (!apiKey) return std::nullopt;
+
+    std::string boardState = boardToSimpleString();
+    std::string cmd = "python3 chatgpt_move.py \"" + boardState + "\"";
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) return std::nullopt;
+    char buffer[128];
+    std::string result;
+    while (fgets(buffer, sizeof(buffer), pipe)) {
+        result += buffer;
+    }
+    pclose(pipe);
+    std::istringstream iss(result);
+    AIMove m;
+    if (iss >> m.sr >> m.sc >> m.er >> m.ec) {
+        return m;
+    }
+    return std::nullopt;
+}
 
 bool isInsideBoard(int row, int col) {
     return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
@@ -553,6 +596,24 @@ void movePiece(int row, int col, sf::RenderWindow& window) {
 
 void aiMove(sf::RenderWindow& window) {
     if (isWhiteTurn) return;
+
+    if (auto move = requestAIMoveFromChatGPT()) {
+        if (isInsideBoard(move->sr, move->sc) && isInsideBoard(move->er, move->ec)) {
+            Piece* p = board[move->sr][move->sc];
+            if (p && !p->isWhite) {
+                bool turnBefore = isWhiteTurn;
+                selectedPiece = p;
+                selectedPos = sf::Vector2i(move->sr, move->sc);
+                if (p->type == "black-pawn") moveBlackPawn(move->er, move->ec);
+                else if (p->type.find("rook") != std::string::npos) moveRook(move->er, move->ec);
+                else if (p->type.find("knight") != std::string::npos) moveKnight(move->er, move->ec);
+                else if (p->type.find("bishop") != std::string::npos) moveBishop(move->er, move->ec);
+                else if (p->type.find("queen") != std::string::npos) moveQueen(move->er, move->ec);
+                else if (p->type.find("king") != std::string::npos) moveKing(move->er, move->ec);
+                if (isWhiteTurn != turnBefore) return;
+            }
+        }
+    }
 
     std::vector<std::pair<int, int>> pieces;
     for (int r = 0; r < 8; ++r) {
