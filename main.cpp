@@ -650,11 +650,15 @@ void aiMove(sf::RenderWindow& window) {
 }
 
 void drawMenu(sf::RenderWindow& window) {
-    const sf::Font& font = sf::Font::getDefaultFont();
+    static sf::Font font;
+    if (!font.loadFromFile("assets/fonts/arial.ttf")) {
+        std::cerr << "Failed to load font\n";
+        return;
+    }
     sf::RectangleShape pvp(sf::Vector2f(200, 50));
     pvp.setPosition(300, 200);
     sf::Text pvpText("Play", font, 24);
-    pvpText.setPosition(370, 210);
+    pvpText.setPosition(370, 210);  
 
     sf::RectangleShape ai(sf::Vector2f(200, 50));
     ai.setPosition(300, 270);
@@ -702,7 +706,11 @@ void handleMenuClick(sf::Vector2i mousePos, sf::RenderWindow& window) {
 }
 
 void drawSettings(sf::RenderWindow& window) {
-    const sf::Font& font = sf::Font::getDefaultFont();
+    static sf::Font font;
+    if (!font.loadFromFile("assets/fonts/arial.ttf")) {
+        std::cerr << "Failed to load font\n";
+        return;
+    }
     sf::Text text("Settings - Click to return", font, 24);
     text.setPosition(180, 300);
     window.draw(text);

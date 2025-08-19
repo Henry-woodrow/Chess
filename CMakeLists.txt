@@ -16,3 +16,6 @@ add_executable(chess main.cpp)
 
 # Link SFML
 target_link_libraries(chess sfml-graphics sfml-window sfml-system)
+add_custom_command(TARGET chess POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:chess>/assets)
