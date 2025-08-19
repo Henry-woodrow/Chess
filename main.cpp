@@ -657,22 +657,30 @@ void drawMenu(sf::RenderWindow& window) {
     }
     sf::RectangleShape pvp(sf::Vector2f(200, 50));
     pvp.setPosition(300, 200);
+    pvp.setFillColor(sf::Color(100, 149, 237)); // cornflower blue
     sf::Text pvpText("Play", font, 24);
-    pvpText.setPosition(370, 210);  
+    pvpText.setFillColor(sf::Color::White);
+    pvpText.setPosition(370, 210);
 
     sf::RectangleShape ai(sf::Vector2f(200, 50));
     ai.setPosition(300, 270);
+    ai.setFillColor(sf::Color(60, 179, 113)); // medium sea green
     sf::Text aiText("Play vs AI", font, 24);
+    aiText.setFillColor(sf::Color::White);
     aiText.setPosition(335, 280);
 
     sf::RectangleShape settings(sf::Vector2f(200, 50));
     settings.setPosition(300, 340);
+    settings.setFillColor(sf::Color(238, 232, 170)); // pale goldenrod
     sf::Text settingsText("Settings", font, 24);
+    settingsText.setFillColor(sf::Color::Black);
     settingsText.setPosition(350, 350);
 
     sf::RectangleShape exit(sf::Vector2f(200, 50));
     exit.setPosition(300, 410);
+    exit.setFillColor(sf::Color(205, 92, 92)); // indian red
     sf::Text exitText("Exit", font, 24);
+    exitText.setFillColor(sf::Color::White);
     exitText.setPosition(370, 420);
 
     window.draw(pvp);
@@ -746,7 +754,7 @@ int main() {
             aiMove(window);
         }
 
-        window.clear();
+        window.clear(gameState == GameState::MENU ? sf::Color(50, 50, 50) : sf::Color::Black);
         if (gameState == GameState::MENU) {
             drawMenu(window);
         } else if (gameState == GameState::PLAYING) {
