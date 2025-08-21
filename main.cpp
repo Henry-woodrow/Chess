@@ -30,7 +30,7 @@ enum class GameState { MENU, SETTINGS, PLAYING };
 GameState gameState = GameState::MENU;
 bool aiEnabled = false;
 
-struct AIMove { int sr, sc, er, ec; };
+struct AIMove { int sr, sc, er, ec; int score; };
 
 std::string boardToSimpleString() {
     std::ostringstream oss;
@@ -64,6 +64,7 @@ std::optional<AIMove> requestAIMoveFromChatGPT() {
     std::istringstream iss(result);
     AIMove m;
     if (iss >> m.sr >> m.sc >> m.er >> m.ec) {
+        m.score = 0;
         return m;
     }
     return std::nullopt;
@@ -182,6 +183,78 @@ bool wouldLeaveInCheck(int startRow, int startCol, int endRow, int endCol) {
     board[startRow][startCol] = moving;
     board[endRow][endCol] = captured;
     return inCheck;
+}
+
+int pieceValue(const std::string& type) {
+    if (type.find("pawn") != std::string::npos) return 1;
+    if (type.find("knight") != std::string::npos) return 3;
+    if (type.find("bishop") != std::string::npos) return 3;
+    if (type.find("rook") != std::string::npos) return 5;
+    if (type.find("queen") != std::string::npos) return 9;
+    return 0;
+}
+
+bool isValidMove(Piece* p, int sr, int sc, int er, int ec) {
+    if (!p || p->isWhite) return false;
+    if (!isInsideBoard(er, ec)) return false;
+    if (board[er][ec] && board[er][ec]->isWhite == p->isWhite) return false;
+    if (board[er][ec] && board[er][ec]->type.find("king") != std::string::npos)
+        return false;
+
+    int dr = er - sr;
+    int dc = ec - sc;
+
+    if (p->type == "black-pawn") {
+        if (dc == 0) {
+            if (dr == 1 && board[er][ec] == nullptr) {
+            } else if (dr == 2 && sr == 1 && board[er][ec] == nullptr && board[sr + 1][sc] == nullptr) {
+            } else {
+                return false;
+            }
+        } else if (abs(dc) == 1 && dr == 1 && board[er][ec] && board[er][ec]->isWhite) {
+        } else {
+            return false;
+        }
+    } else if (p->type.find("rook") != std::string::npos) {
+        if (sr != er && sc != ec) return false;
+        if (!isPathClear(sr, sc, er, ec)) return false;
+    } else if (p->type.find("bishop") != std::string::npos) {
+        if (abs(dr) != abs(dc)) return false;
+        if (!isPathClear(sr, sc, er, ec)) return false;
+    } else if (p->type.find("queen") != std::string::npos) {
+        if (sr != er && sc != ec && abs(dr) != abs(dc)) return false;
+        if (!isPathClear(sr, sc, er, ec)) return false;
+    } else if (p->type.find("knight") != std::string::npos) {
+        if (!((abs(dr) == 2 && abs(dc) == 1) || (abs(dr) == 1 && abs(dc) == 2)))
+            return false;
+    } else if (p->type.find("king") != std::string::npos) {
+        if (abs(dr) > 1 || abs(dc) > 1) return false;
+        if (isSquareAttacked(er, ec, true)) return false;
+    } else {
+        return false;
+    }
+
+    if (wouldLeaveInCheck(sr, sc, er, ec)) return false;
+    return true;
+}
+
+std::vector<AIMove> generateLegalMovesForBlack() {
+    std::vector<AIMove> moves;
+    for (int sr = 0; sr < BOARD_SIZE; ++sr) {
+        for (int sc = 0; sc < BOARD_SIZE; ++sc) {
+            Piece* p = board[sr][sc];
+            if (!p || p->isWhite) continue;
+            for (int er = 0; er < BOARD_SIZE; ++er) {
+                for (int ec = 0; ec < BOARD_SIZE; ++ec) {
+                    if (isValidMove(p, sr, sc, er, ec)) {
+                        int score = board[er][ec] ? pieceValue(board[er][ec]->type) : 0;
+                        moves.push_back({sr, sc, er, ec, score});
+                    }
+                }
+            }
+        }
+    }
+    return moves;
 }
 
 void promotePawn(Piece* pawn) {
@@ -600,7 +673,7 @@ void aiMove(sf::RenderWindow& window) {
     if (auto move = requestAIMoveFromChatGPT()) {
         if (isInsideBoard(move->sr, move->sc) && isInsideBoard(move->er, move->ec)) {
             Piece* p = board[move->sr][move->sc];
-            if (p && !p->isWhite) {
+            if (isValidMove(p, move->sr, move->sc, move->er, move->ec)) {
                 bool turnBefore = isWhiteTurn;
                 selectedPiece = p;
                 selectedPos = sf::Vector2i(move->sr, move->sc);
@@ -615,38 +688,30 @@ void aiMove(sf::RenderWindow& window) {
         }
     }
 
-    std::vector<std::pair<int, int>> pieces;
-    for (int r = 0; r < 8; ++r) {
-        for (int c = 0; c < 8; ++c) {
-            if (board[r][c] && !board[r][c]->isWhite) {
-                pieces.emplace_back(r, c);
-            }
-        }
-    }
-    if (pieces.empty()) return;
+    auto moves = generateLegalMovesForBlack();
+    if (moves.empty()) return;
 
+    int bestScore = 0;
+    for (const auto& m : moves) {
+        if (m.score > bestScore) bestScore = m.score;
+    }
+    std::vector<AIMove> candidates;
+    for (const auto& m : moves) {
+        if (m.score == bestScore) candidates.push_back(m);
+    }
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> pieceDist(0, pieces.size() - 1);
-    std::uniform_int_distribution<> posDist(0, 7);
-
-    for (int attempts = 0; attempts < 1000 && !isWhiteTurn; ++attempts) {
-        auto [sr, sc] = pieces[pieceDist(gen)];
-        int er = posDist(gen);
-        int ec = posDist(gen);
-        Piece* p = board[sr][sc];
-        if (!p) continue;
-        bool turnBefore = isWhiteTurn;
-        selectedPiece = p;
-        selectedPos = sf::Vector2i(sr, sc);
-        if (p->type == "black-pawn") moveBlackPawn(er, ec);
-        else if (p->type.find("rook") != std::string::npos) moveRook(er, ec);
-        else if (p->type.find("knight") != std::string::npos) moveKnight(er, ec);
-        else if (p->type.find("bishop") != std::string::npos) moveBishop(er, ec);
-        else if (p->type.find("queen") != std::string::npos) moveQueen(er, ec);
-        else if (p->type.find("king") != std::string::npos) moveKing(er, ec);
-        if (isWhiteTurn != turnBefore) return;
-    }
+    std::uniform_int_distribution<> dist(0, candidates.size() - 1);
+    AIMove choice = candidates[dist(gen)];
+    Piece* p = board[choice.sr][choice.sc];
+    selectedPiece = p;
+    selectedPos = sf::Vector2i(choice.sr, choice.sc);
+    if (p->type == "black-pawn") moveBlackPawn(choice.er, choice.ec);
+    else if (p->type.find("rook") != std::string::npos) moveRook(choice.er, choice.ec);
+    else if (p->type.find("knight") != std::string::npos) moveKnight(choice.er, choice.ec);
+    else if (p->type.find("bishop") != std::string::npos) moveBishop(choice.er, choice.ec);
+    else if (p->type.find("queen") != std::string::npos) moveQueen(choice.er, choice.ec);
+    else if (p->type.find("king") != std::string::npos) moveKing(choice.er, choice.ec);
 }
 
 void drawMenu(sf::RenderWindow& window) {
