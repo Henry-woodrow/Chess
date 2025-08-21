@@ -31,6 +31,14 @@ GameState gameState = GameState::MENU;
 bool aiEnabled = false;
 std::string gameOverMessage;
 
+std::vector<sf::Vector2i> validMoves;
+
+void clearSelection() {
+    selectedPiece = nullptr;
+    selectedPos = sf::Vector2i(-1, -1);
+    validMoves.clear();
+}
+
 struct AIMove { int sr, sc, er, ec; int score; };
 
 std::string boardToSimpleString() {
@@ -250,6 +258,20 @@ bool isValidMove(Piece* p, int sr, int sc, int er, int ec) {
     return true;
 }
 
+void updateValidMoves() {
+    validMoves.clear();
+    if (!selectedPiece) return;
+    int sr = selectedPos.x;
+    int sc = selectedPos.y;
+    for (int r = 0; r < BOARD_SIZE; ++r) {
+        for (int c = 0; c < BOARD_SIZE; ++c) {
+            if (isValidMove(selectedPiece, sr, sc, r, c)) {
+                validMoves.push_back({r, c});
+            }
+        }
+    }
+}
+
 std::vector<AIMove> generateLegalMovesForBlack() {
     std::vector<AIMove> moves;
     for (int sr = 0; sr < BOARD_SIZE; ++sr) {
@@ -340,8 +362,7 @@ void promotePawn(Piece* pawn) {
 bool finalizeMove(int startRow, int startCol, int row, int col) {
     if (board[row][col] && board[row][col]->type.find("king") != std::string::npos) {
         std::cout << "Cannot capture the king.\n";
-        selectedPiece = nullptr;
-        selectedPos = sf::Vector2i(-1, -1);
+        clearSelection();
         return false;
     }
 
@@ -351,8 +372,7 @@ bool finalizeMove(int startRow, int startCol, int row, int col) {
     board[startRow][startCol] = nullptr;
     Piece* movedPiece = selectedPiece;
     std::cout << "Moved piece: " << board[row][col]->type << " to (" << col << ", " << row << ")\n";
-    selectedPiece = nullptr;
-    selectedPos = sf::Vector2i(-1, -1);
+    clearSelection();
     if (movedPiece->type.find("pawn") != std::string::npos && (row == 0 || row == 7)) {
         promotePawn(movedPiece);
     }
@@ -413,6 +433,16 @@ void drawPieces(sf::RenderWindow& window) {
     }
 }
 
+void drawMoveHints(sf::RenderWindow& window) {
+    sf::CircleShape dot(TILE_SIZE / 8.0f);
+    dot.setFillColor(sf::Color(0, 0, 0, 150));
+    for (auto& mv : validMoves) {
+        dot.setPosition(mv.y * TILE_SIZE + TILE_SIZE / 2 - dot.getRadius(),
+                        mv.x * TILE_SIZE + TILE_SIZE / 2 - dot.getRadius());
+        window.draw(dot);
+    }
+}
+
 void clearBoard() {
     for (int r = 0; r < 8; ++r) {
         for (int c = 0; c < 8; ++c) {
@@ -425,8 +455,7 @@ void clearBoard() {
 void default_board() {
     clearBoard();
     isWhiteTurn = true;
-    selectedPiece = nullptr;
-    selectedPos = sf::Vector2i(-1, -1);
+    clearSelection();
 
     for (int i = 0; i < 8; ++i) {
         board[1][i] = createPiece("black-pawn");
@@ -483,13 +512,11 @@ void moveWhitePawn(int row, int col) {
             finalizeMove(startRow, startCol, row, col);
         } else {
             std::cout << "Move would leave king in check\n";
-            selectedPiece = nullptr;
-            selectedPos = sf::Vector2i(-1, -1);
+            clearSelection();
         }
     } else {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
-        selectedPiece = nullptr;
-        selectedPos = sf::Vector2i(-1, -1);
+        clearSelection();
     }
 }
 
@@ -525,13 +552,11 @@ void moveBlackPawn(int row, int col) {
             finalizeMove(startRow, startCol, row, col);
         } else {
             std::cout << "Move would leave king in check\n";
-            selectedPiece = nullptr;
-            selectedPos = sf::Vector2i(-1, -1);
+            clearSelection();
         }
     } else {
         std::cout << "Invalid move for piece: " << selectedPiece->type << "\n";
-        selectedPiece = nullptr;
-        selectedPos = sf::Vector2i(-1, -1);
+        clearSelection();
     }
 }
 
@@ -553,14 +578,12 @@ void moveRook(int row, int col) {
             finalizeMove(startRow, startCol, row, col);
         } else {
             std::cout << "Move would leave king in check\n";
-            selectedPiece = nullptr;
-            selectedPos = sf::Vector2i(-1, -1);
+            clearSelection();
         }
         return;
     }
 
-    selectedPiece = nullptr;
-    selectedPos = sf::Vector2i(-1, -1);
+    clearSelection();
 }
 
 void moveBishop(int row, int col) {
@@ -580,14 +603,12 @@ void moveBishop(int row, int col) {
             finalizeMove(startRow, startCol, row, col);
         } else {
             std::cout << "Move would leave king in check\n";
-            selectedPiece = nullptr;
-            selectedPos = sf::Vector2i(-1, -1);
+            clearSelection();
         }
         return;
     }
 
-    selectedPiece = nullptr;
-    selectedPos = sf::Vector2i(-1, -1);
+    clearSelection();
 }
 
 void moveKnight(int row, int col) {
@@ -608,14 +629,12 @@ void moveKnight(int row, int col) {
             finalizeMove(startRow, startCol, row, col);
         } else {
             std::cout << "Move would leave king in check\n";
-            selectedPiece = nullptr;
-            selectedPos = sf::Vector2i(-1, -1);
+            clearSelection();
         }
         return;
     }
 
-    selectedPiece = nullptr;
-    selectedPos = sf::Vector2i(-1, -1);
+    clearSelection();
 }
 
 void moveQueen(int row, int col) {
@@ -639,14 +658,12 @@ void moveQueen(int row, int col) {
             finalizeMove(startRow, startCol, row, col);
         } else {
             std::cout << "Move would leave king in check\n";
-            selectedPiece = nullptr;
-            selectedPos = sf::Vector2i(-1, -1);
+            clearSelection();
         }
         return;
     }
 
-    selectedPiece = nullptr;
-    selectedPos = sf::Vector2i(-1, -1);
+    clearSelection();
 }
 
 void moveKing(int row, int col) {
@@ -668,14 +685,12 @@ void moveKing(int row, int col) {
             finalizeMove(startRow, startCol, row, col);
         } else {
             std::cout << "Move would leave king in check\n";
-            selectedPiece = nullptr;
-            selectedPos = sf::Vector2i(-1, -1);
+            clearSelection();
         }
         return;
     }
 
-    selectedPiece = nullptr;
-    selectedPos = sf::Vector2i(-1, -1);
+    clearSelection();
 }
 
 void movePiece(int row, int col, sf::RenderWindow& window) {
@@ -685,6 +700,7 @@ void movePiece(int row, int col, sf::RenderWindow& window) {
         if (board[row][col] != nullptr && board[row][col]->isWhite == isWhiteTurn) {
             selectedPiece = board[row][col];
             selectedPos = sf::Vector2i(row, col);
+            updateValidMoves();
         }
     } else {
         if (selectedPiece->type == "white-pawn") {
@@ -703,8 +719,7 @@ void movePiece(int row, int col, sf::RenderWindow& window) {
             moveKing(row, col);
         } else {
             std::cout << "Unknown piece type.\n";
-            selectedPiece = nullptr;
-            selectedPos = sf::Vector2i(-1, -1);
+            clearSelection();
         }
     }
 }
@@ -885,11 +900,13 @@ int main() {
             drawMenu(window);
         } else if (gameState == GameState::PLAYING) {
             drawBoard(window);
+            drawMoveHints(window);
             drawPieces(window);
         } else if (gameState == GameState::SETTINGS) {
             drawSettings(window);
         } else if (gameState == GameState::GAME_OVER) {
             drawBoard(window);
+            drawMoveHints(window);
             drawPieces(window);
             drawGameOver(window);
         }

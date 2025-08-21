@@ -12,8 +12,7 @@ void resetBoardState() {
             }
         }
     }
-    selectedPiece = nullptr;
-    selectedPos = sf::Vector2i(-1, -1);
+    clearSelection();
     isWhiteTurn = true;
 }
 
