@@ -26,9 +26,10 @@ Piece* board[8][8] = {nullptr};
 bool isWhiteTurn = true;
 std::map<std::string, sf::Texture> textures;
 
-enum class GameState { MENU, SETTINGS, PLAYING };
+enum class GameState { MENU, SETTINGS, PLAYING, GAME_OVER };
 GameState gameState = GameState::MENU;
 bool aiEnabled = false;
+std::string gameOverMessage;
 
 struct AIMove { int sr, sc, er, ec; int score; };
 
@@ -195,7 +196,7 @@ int pieceValue(const std::string& type) {
 }
 
 bool isValidMove(Piece* p, int sr, int sc, int er, int ec) {
-    if (!p || p->isWhite) return false;
+    if (!p) return false;
     if (!isInsideBoard(er, ec)) return false;
     if (board[er][ec] && board[er][ec]->isWhite == p->isWhite) return false;
     if (board[er][ec] && board[er][ec]->type.find("king") != std::string::npos)
@@ -204,7 +205,18 @@ bool isValidMove(Piece* p, int sr, int sc, int er, int ec) {
     int dr = er - sr;
     int dc = ec - sc;
 
-    if (p->type == "black-pawn") {
+    if (p->type == "white-pawn") {
+        if (dc == 0) {
+            if (dr == -1 && board[er][ec] == nullptr) {
+            } else if (dr == -2 && sr == 6 && board[er][ec] == nullptr && board[sr - 1][sc] == nullptr) {
+            } else {
+                return false;
+            }
+        } else if (abs(dc) == 1 && dr == -1 && board[er][ec] && !board[er][ec]->isWhite) {
+        } else {
+            return false;
+        }
+    } else if (p->type == "black-pawn") {
         if (dc == 0) {
             if (dr == 1 && board[er][ec] == nullptr) {
             } else if (dr == 2 && sr == 1 && board[er][ec] == nullptr && board[sr + 1][sc] == nullptr) {
@@ -229,7 +241,7 @@ bool isValidMove(Piece* p, int sr, int sc, int er, int ec) {
             return false;
     } else if (p->type.find("king") != std::string::npos) {
         if (abs(dr) > 1 || abs(dc) > 1) return false;
-        if (isSquareAttacked(er, ec, true)) return false;
+        if (isSquareAttacked(er, ec, !p->isWhite)) return false;
     } else {
         return false;
     }
@@ -255,6 +267,35 @@ std::vector<AIMove> generateLegalMovesForBlack() {
         }
     }
     return moves;
+}
+
+bool hasAnyLegalMoves(bool white) {
+    for (int sr = 0; sr < BOARD_SIZE; ++sr) {
+        for (int sc = 0; sc < BOARD_SIZE; ++sc) {
+            Piece* p = board[sr][sc];
+            if (!p || p->isWhite != white) continue;
+            for (int er = 0; er < BOARD_SIZE; ++er) {
+                for (int ec = 0; ec < BOARD_SIZE; ++ec) {
+                    if (isValidMove(p, sr, sc, er, ec)) return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void checkGameEnd(bool whiteTurn) {
+    int kRow, kCol;
+    findKing(whiteTurn, kRow, kCol);
+    if (kRow == -1) return;
+    if (hasAnyLegalMoves(whiteTurn)) return;
+    bool inCheck = isSquareAttacked(kRow, kCol, !whiteTurn);
+    if (inCheck) {
+        gameOverMessage = whiteTurn ? "Black wins by checkmate" : "White wins by checkmate";
+    } else {
+        gameOverMessage = "Stalemate - Draw";
+    }
+    gameState = GameState::GAME_OVER;
 }
 
 void promotePawn(Piece* pawn) {
@@ -322,6 +363,7 @@ bool finalizeMove(int startRow, int startCol, int row, int col) {
     if (kRow != -1 && isSquareAttacked(kRow, kCol, moverIsWhite)) {
         std::cout << (!moverIsWhite ? "White" : "Black") << " king is in check\n";
     }
+    checkGameEnd(!moverIsWhite);
     return true;
 }
 
@@ -789,6 +831,23 @@ void drawSettings(sf::RenderWindow& window) {
     window.draw(text);
 }
 
+void drawGameOver(sf::RenderWindow& window) {
+    static sf::Font font;
+    if (!font.loadFromFile("assets/fonts/arial.ttf")) {
+        std::cerr << "Failed to load font\n";
+        return;
+    }
+    sf::RectangleShape overlay(sf::Vector2f(TILE_SIZE * BOARD_SIZE, TILE_SIZE * BOARD_SIZE));
+    overlay.setFillColor(sf::Color(0, 0, 0, 150));
+    window.draw(overlay);
+    sf::Text text(gameOverMessage + "\nClick to return to menu", font, 32);
+    text.setFillColor(sf::Color::White);
+    sf::FloatRect bounds = text.getLocalBounds();
+    text.setPosition((TILE_SIZE * BOARD_SIZE - bounds.width) / 2,
+                     (TILE_SIZE * BOARD_SIZE - bounds.height) / 2 - 20);
+    window.draw(text);
+}
+
 #ifndef UNIT_TEST
 int main() {
     sf::RenderWindow window(sf::VideoMode(800, 800), "C++ Chess");
@@ -811,6 +870,8 @@ int main() {
                     movePiece(row, col, window);
                 } else if (gameState == GameState::SETTINGS) {
                     gameState = GameState::MENU;
+                } else if (gameState == GameState::GAME_OVER) {
+                    gameState = GameState::MENU;
                 }
             }
         }
@@ -827,6 +888,10 @@ int main() {
             drawPieces(window);
         } else if (gameState == GameState::SETTINGS) {
             drawSettings(window);
+        } else if (gameState == GameState::GAME_OVER) {
+            drawBoard(window);
+            drawPieces(window);
+            drawGameOver(window);
         }
         window.display();
     }
